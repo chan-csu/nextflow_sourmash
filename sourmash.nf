@@ -1,14 +1,29 @@
 #!/usr/bin/env nextflow
 
-params.reads = 'data/*.fq'
+params.reads = 'data/*.fq.gz'
 params.adapt = 'data/adapters.fasta'
+params.results = 'results'
 
 files = Channel.fromPath(params.reads)
 adapters = file(params.adapt)
 
+process gunzip {
+    input:
+        file f from files
+
+    output:
+        file "*.fq" into unzip_files
+
+    script:
+		"""
+		gunzip -f "${f}"
+		"""
+
+}
+
 process adapter_trimming {
     input:
-        val file from files
+        val file from unzip_files
         file 'adapters.fasta' from adapters
 
     output:
@@ -48,13 +63,14 @@ process sourmash_compute {
 }
 
 process sourmash_compare {
+
     input:
         file '*.sig' from sourmash_compute.toList()
 
     output:
         file "cmp" into sourmash_compare
         file "cmp.labels.txt" into labels
-
+     
     script:
         """
         sourmash compare *.sig -o cmp
@@ -62,17 +78,38 @@ process sourmash_compare {
 }
 
 process sourmash_plot {
-    publishDir 'results'
+    publishDir params.results, mode: 'copy'
 
     input:
         file "cmp" from sourmash_compare
         file "cmp.labels.txt" from labels
 
     output:
-        file "*.png" into plots
+        file "cmp.matrix.png" into plots
 
     script:
         """
+        mkdir -p /root/.config/matplotlib
+        echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
         sourmash plot cmp --labels
+        """
+}
+
+process sourmash_tsv {
+    publishDir params.results, mode: 'copy'
+
+    input:
+        file "cmp" from sourmash_compare
+        file "cmp.labels.txt" from labels
+
+    output:
+        file "cmp.tsv" into tsv
+        file "cmp.labels.txt" into tsv_labels
+
+        """
+        #!/usr/bin/env python
+        import numpy
+        M = numpy.load(open('cmp', 'rb'))
+        numpy.savetxt('cmp.tsv', M, delimiter="\t")
         """
 }
