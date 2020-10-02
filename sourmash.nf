@@ -89,8 +89,8 @@ process sourmash_plot {
 
     script:
         """
-        mkdir -p /root/.config/matplotlib
-        echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
+        mkdir -p $HOME/.config/matplotlib
+        echo "backend : Agg" > $HOME/.config/matplotlib/matplotlibrc
         sourmash plot cmp --labels
         """
 }
