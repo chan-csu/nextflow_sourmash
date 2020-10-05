@@ -42,17 +42,32 @@ process quality_trimming {
         file fastq from adapt_trimmed
 
     output:
-        file "*" into trimmed
+        file "*" into quality_trimmed
 
     script:
         """
         sickle se -f $fastq -t sanger -o "${fastq.baseName}" -q 20
+        """
+}
+
+
+process kmer_trimming {
+    input:
+        file fastq from quality_trimmed
+
+    output:
+        file "*" into trimmed
+
+    script:
+        """
         trim-low-abund.py -C 3 -Z 18 -V -M 100e9 "${fastq.baseName}"
         mv "${fastq.baseName}".abundtrim "${fastq.baseName}"
         """
         // khmer, which trim_low_abundance comes from, suggests here khmer.readthedocs.io/en/v2.1.1/user/choosing-table-sizes.html
         // for -M 256G for ~300 Gbp of soil metagenomes. But summit nodes have 4.84 * 24 = 116 GB on normal nodes, and only five 42.7 GB * 48 = 2049 GB nodes in queue smem
+        // https://curc.readthedocs.io/en/latest/running-jobs/job-resources.html#partitions
 }
+
 
 process sourmash_compute {
     input:
