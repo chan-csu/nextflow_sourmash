@@ -7,6 +7,7 @@ params.results = 'results'
 files = Channel.fromPath(params.reads)
 adapters = file(params.adapt)
 
+
 process gunzip {
     input:
         file f from files
@@ -46,6 +47,8 @@ process quality_trimming {
     script:
         """
         sickle se -f $fastq -t sanger -o "${fastq.baseName}" -q 20
+        trim-low-abund.py -C 3 -Z 18 -V -M 2e9 "${fastq.baseName}"
+        mv "${fastq.baseName}".abundtrim "${fastq.baseName}"
         """
 }
 
@@ -58,8 +61,11 @@ process sourmash_compute {
 
     script:
         """
-        sourmash compute -f $trimmed
+        sourmash compute -f $trimmed --scaled 1000 -k 31
         """
+        // defualt = -k 31 -n 500
+        //  -k 21,31,51 
+        // for some downstream uses, may want to use --containment
 }
 
 process sourmash_compare {
@@ -73,8 +79,9 @@ process sourmash_compare {
      
     script:
         """
-        sourmash compare *.sig -o cmp
+        sourmash compare -k 31 *.sig -o cmp
         """
+        //  -p 8 for multi-threading, also add process.$sourmash_compare.cpus = 8 to config
 }
 
 process sourmash_plot {
@@ -86,30 +93,14 @@ process sourmash_plot {
 
     output:
         file "cmp.matrix.png" into plots
+        file "cmp.csv" into plot_csv
 
     script:
         """
-        mkdir -p $HOME/.config/matplotlib
-        echo "backend : Agg" > $HOME/.config/matplotlib/matplotlibrc
-        sourmash plot cmp --labels
+        sourmash plot cmp --labels --csv cmp.csv
         """
+        // if env dosen't have it, this will fix matplotlib errors
+        //         mkdir -p $HOME/.config/matplotlib
+        //         echo "backend : Agg" > $HOME/.config/matplotlib/matplotlibrc
 }
 
-process sourmash_tsv {
-    publishDir params.results, mode: 'copy'
-
-    input:
-        file "cmp" from sourmash_compare
-        file "cmp.labels.txt" from labels
-
-    output:
-        file "cmp.tsv" into tsv
-        file "cmp.labels.txt" into tsv_labels
-
-        """
-        #!/usr/bin/env python
-        import numpy
-        M = numpy.load(open('cmp', 'rb'))
-        numpy.savetxt('cmp.tsv', M, delimiter="\t")
-        """
-}
