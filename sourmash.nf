@@ -60,7 +60,7 @@ process kmer_trimming {
 
     script:
         """
-        trim-low-abund.py -C 3 -Z 18 -V -M 100e9 "${fastq.baseName}"
+        trim-low-abund.py -C 3 -Z 18 -V -M 64e9 "${fastq.baseName}"
         mv "${fastq.baseName}".abundtrim "${fastq.baseName}"
         """
         // khmer, which trim_low_abundance comes from, suggests here khmer.readthedocs.io/en/v2.1.1/user/choosing-table-sizes.html
