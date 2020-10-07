@@ -42,7 +42,7 @@ process quality_trimming {
         file fastq from adapt_trimmed
 
     output:
-        file "*" into quality_trimmed
+        file "*" into trimmed //quality_trimmed
 
     script:
         """
@@ -50,7 +50,7 @@ process quality_trimming {
         """
 }
 
-
+/* 
 process kmer_trimming {
     input:
         file fastq from quality_trimmed
@@ -67,6 +67,7 @@ process kmer_trimming {
         // for -M 256G for ~300 Gbp of soil metagenomes. But summit nodes have 4.84 * 24 = 116 GB on normal nodes, and only five 42.7 GB * 48 = 2049 GB nodes in queue smem
         // https://curc.readthedocs.io/en/latest/running-jobs/job-resources.html#partitions
 }
+*/
 
 
 process sourmash_compute {
@@ -78,7 +79,7 @@ process sourmash_compute {
 
     script:
         """
-        sourmash compute -f $trimmed --scaled 1000 -k 31
+        sourmash compute -f $trimmed --scaled 1000 -k 31 --track-abundance
         """
         // defualt = -k 31 -n 500
         //  -k 21,31,51 
