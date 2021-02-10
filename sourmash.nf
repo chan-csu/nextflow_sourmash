@@ -3,10 +3,11 @@
 params.reads = 'data/*.fq.gz'
 params.adapt = 'data/adapters.fasta'
 params.results = 'results'
+params.host = 'host.sig'
 
 files = Channel.fromPath(params.reads)
 adapters = file(params.adapt)
-
+host = file(params.host)
 
 process gunzip {
     input:
@@ -102,6 +103,7 @@ process sourmash_compare {
         //  -p 8 for multi-threading, also add process.$sourmash_compare.cpus = 8 to config
 }
 
+
 process sourmash_plot {
     publishDir params.results, mode: 'copy'
 
@@ -122,3 +124,15 @@ process sourmash_plot {
         //         echo "backend : Agg" > $HOME/.config/matplotlib/matplotlibrc
 }
 
+process sourmash_plot {
+    publishDir params.results, mode: 'copy'
+
+    input:
+        file '*.sig' from sourmash_compute.toList()
+
+    script:
+        """
+        
+        """
+
+}

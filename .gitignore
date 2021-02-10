@@ -11,3 +11,6 @@ data/
 .nextflow.history
 work/
 results/
+outdir/
+raw_sequence_data/
+tmp/
